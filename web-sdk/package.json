@@ -1,0 +1,28 @@
+{
+  "name": "@fingerprint-solution/web-sdk",
+  "version": "0.1.0",
+  "description": "FingerprintJS web wrapper for device fingerprint backend integration",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "module": "dist/index.js",
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "fingerprintjs",
+    "device",
+    "fingerprint",
+    "security"
+  ],
+  "author": "Fingerprint Team",
+  "license": "MIT",
+  "dependencies": {
+    "@fingerprintjs/fingerprintjs": "^4.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
