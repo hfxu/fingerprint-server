@@ -3,6 +3,7 @@ package com.fingerprint.server.service;
 import com.fingerprint.server.config.SimilarityProperties;
 import com.fingerprint.server.dto.FingerprintRequest;
 import com.fingerprint.server.dto.FingerprintResponse;
+import com.fingerprint.server.dto.GeoLocationInfo;
 import com.fingerprint.server.mapper.DeviceFingerprintMapper;
 import com.fingerprint.server.model.DeviceFingerprintDocument;
 import com.fingerprint.server.repository.DeviceFingerprintRepository;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
@@ -43,15 +45,32 @@ public class DeviceFingerprintService {
     private final SimilarityScorer similarityScorer;
     private final SimilarityProperties similarityProperties;
 
+    @Autowired(required = false)
+    private GeoIpService geoIpService;
+
     /**
      * 处理新上报的设备指纹。
      *
      * @param request 指纹上报请求
+     * @param clientIp 客户端真实IP地址
      * @return 匹配结果
      */
     @Transactional
-    public FingerprintResponse handleFingerprint(FingerprintRequest request) {
+    public FingerprintResponse handleFingerprint(FingerprintRequest request, String clientIp) {
         DeviceFingerprintDocument incoming = mapper.toDocument(request);
+        
+        // 使用从请求头获取的真实IP地址覆盖客户端上报的IP
+        if (StringUtils.isNotBlank(clientIp)) {
+            if (incoming.getNetwork() == null) {
+                incoming.setNetwork(new DeviceFingerprintDocument.NetworkFingerprint());
+            }
+            incoming.getNetwork().setIpAddress(clientIp);
+            log.debug("Updated IP address from request header: {}", clientIp);
+            
+            // 通过GeoIP查询地理位置信息
+            enrichWithGeoLocation(incoming, clientIp);
+        }
+        
         CandidateMatch candidateMatch = findBestMatch(incoming).orElse(null);
         Instant now = Instant.now();
 
@@ -201,6 +220,76 @@ public class DeviceFingerprintService {
                 ipHistory.remove(ipHistory.size() - 1);
             }
         }
+    }
+
+    /**
+     * 使用GeoIP数据库查询并填充地理位置信息。
+     *
+     * @param document 设备指纹文档
+     * @param ipAddress IP地址
+     */
+    private void enrichWithGeoLocation(DeviceFingerprintDocument document, String ipAddress) {
+        if (geoIpService == null) {
+            log.debug("GeoIpService is not available, skipping geo location enrichment");
+            return;
+        }
+
+        try {
+            geoIpService.lookup(ipAddress).ifPresent(geoInfo -> {
+                DeviceFingerprintDocument.GeoLocation geoData = convertToGeoLocationData(geoInfo);
+                document.setGeoLocation(geoData);
+                log.debug("Enriched fingerprint with geo location: country={}, city={}", 
+                        geoInfo.getCountryCode(), geoInfo.getCity());
+            });
+        } catch (Exception e) {
+            log.error("Failed to enrich geo location for IP: {}", ipAddress, e);
+        }
+    }
+
+    /**
+     * 将GeoLocationInfo转换为GeoLocation。
+     */
+    private DeviceFingerprintDocument.GeoLocation convertToGeoLocationData(GeoLocationInfo geoInfo) {
+        DeviceFingerprintDocument.GeoLocation geoData = new DeviceFingerprintDocument.GeoLocation();
+        geoData.setCountry(geoInfo.getCountryName());
+        geoData.setRegion(geoInfo.getRegion());
+        geoData.setCity(geoInfo.getCity());
+        geoData.setLatitude(geoInfo.getLatitude());
+        geoData.setLongitude(geoInfo.getLongitude());
+        geoData.setTimezone(geoInfo.getTimezone());
+        
+        // 将额外信息存储到extra字段
+        Map<String, Object> extra = new java.util.HashMap<>();
+        if (geoInfo.getCountryCode() != null) {
+            extra.put("countryCode", geoInfo.getCountryCode());
+        }
+        if (geoInfo.getPostalCode() != null) {
+            extra.put("postalCode", geoInfo.getPostalCode());
+        }
+        if (geoInfo.getContinentCode() != null) {
+            extra.put("continentCode", geoInfo.getContinentCode());
+        }
+        if (geoInfo.getContinentName() != null) {
+            extra.put("continentName", geoInfo.getContinentName());
+        }
+        if (geoInfo.getIsp() != null) {
+            extra.put("isp", geoInfo.getIsp());
+        }
+        if (geoInfo.getOrganization() != null) {
+            extra.put("organization", geoInfo.getOrganization());
+        }
+        if (geoInfo.getAsn() != null) {
+            extra.put("asn", geoInfo.getAsn());
+        }
+        if (geoInfo.getAsOrganization() != null) {
+            extra.put("asOrganization", geoInfo.getAsOrganization());
+        }
+        
+        if (!extra.isEmpty()) {
+            geoData.setExtra(extra);
+        }
+        
+        return geoData;
     }
 
     private record CandidateMatch(DeviceFingerprintDocument document, double score) {
