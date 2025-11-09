@@ -31,9 +31,6 @@ public record FingerprintRequest(
         NetworkFingerprint network,
 
         @Valid
-        GeoLocation geoLocation,
-
-        @Valid
         CertificateFingerprint certificate,
 
         @NotNull(message = "采集时间不能为空")
@@ -95,20 +92,6 @@ public record FingerprintRequest(
             @NotNull(message = "rtt 不能为空")
             Double rtt,
             String isp,
-            Map<String, Object> extra
-    ) {
-    }
-
-    /**
-     * IP 地理位置信息。
-     */
-    public record GeoLocation(
-            String country,
-            String region,
-            String city,
-            Double latitude,
-            Double longitude,
-            String timezone,
             Map<String, Object> extra
     ) {
     }
