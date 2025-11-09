@@ -38,7 +38,7 @@ class DeviceFingerprintControllerTest {
     @Test
     void shouldReturnCreatedWhenNewDevice() throws Exception {
         FingerprintResponse response = new FingerprintResponse("device-new", false, 0d, null, Instant.now(), Map.of());
-        when(deviceFingerprintService.handleFingerprint(any())).thenReturn(response);
+        when(deviceFingerprintService.handleFingerprint(any(), any())).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/fingerprints")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -49,7 +49,7 @@ class DeviceFingerprintControllerTest {
     @Test
     void shouldReturnOkWhenMatched() throws Exception {
         FingerprintResponse response = new FingerprintResponse("device-existing", true, 0.98d, "device-existing", Instant.now(), Map.of());
-        when(deviceFingerprintService.handleFingerprint(any())).thenReturn(response);
+        when(deviceFingerprintService.handleFingerprint(any(), any())).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/fingerprints")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -87,15 +87,7 @@ class DeviceFingerprintControllerTest {
                         "ISP",
                         Map.of()
                 ),
-                new FingerprintRequest.GeoLocation(
-                        "CN",
-                        "SH",
-                        "Shanghai",
-                        31.2304,
-                        121.4737,
-                        "Asia/Shanghai",
-                        Map.of()
-                ),
+                // geoLocation 已由后端自动查询，不再从前端传入
                 new FingerprintRequest.CertificateFingerprint(
                         List.of("cert-1"),
                         List.of("pin-1")

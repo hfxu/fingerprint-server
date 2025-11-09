@@ -92,15 +92,7 @@ interface FingerprintServerPayload {
     isp?: string;
     extra?: Record<string, unknown>;
   };
-  geoLocation?: {
-    country?: string;
-    region?: string;
-    city?: string;
-    latitude?: number;
-    longitude?: number;
-    timezone?: string;
-    extra?: Record<string, unknown>;
-  };
+  // geoLocation 已由后端自动查询，不再从前端传入
   certificate?: CertificateFingerprint;
   collectedAt: string;
   metadata?: Record<string, unknown>;
@@ -144,7 +136,7 @@ export class FingerprintClient {
       browser: this.buildBrowserFingerprint(result),
       device: this.buildDeviceFingerprint(),
       network: this.buildNetworkFingerprint(ipResolution),
-      geoLocation: this.buildGeo(ipResolution),
+      // geoLocation 已由后端自动查询，不再从前端传入
       certificate,
       collectedAt: new Date().toISOString(),
       metadata: {
@@ -156,9 +148,6 @@ export class FingerprintClient {
 
     if (!payload.certificate) {
       delete payload.certificate;
-    }
-    if (!payload.geoLocation) {
-      delete payload.geoLocation;
     }
 
     return this.sendToServer(payload);
@@ -232,21 +221,6 @@ export class FingerprintClient {
         saveData: connection?.saveData,
         ...ipResolution?.extra,
       },
-    };
-  }
-
-  private buildGeo(ipResolution?: IpResolution): FingerprintServerPayload['geoLocation'] | undefined {
-    if (!ipResolution?.geo) {
-      return undefined;
-    }
-    return {
-      country: ipResolution.geo.country,
-      region: ipResolution.geo.region,
-      city: ipResolution.geo.city,
-      latitude: ipResolution.geo.latitude,
-      longitude: ipResolution.geo.longitude,
-      timezone: ipResolution.geo.timezone,
-      extra: ipResolution.geo.extra,
     };
   }
 

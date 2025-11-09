@@ -58,7 +58,7 @@ class DeviceFingerprintServiceTest {
         when(elasticsearchOperations.search(any(), eq(DeviceFingerprintDocument.class))).thenReturn(emptySearchHits());
         when(repository.save(any(DeviceFingerprintDocument.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        FingerprintResponse response = deviceFingerprintService.handleFingerprint(request);
+        FingerprintResponse response = deviceFingerprintService.handleFingerprint(request, "2.2.2.2");
 
         assertFalse(response.matched());
         assertEquals(0d, response.similarityScore());
@@ -75,7 +75,7 @@ class DeviceFingerprintServiceTest {
         when(elasticsearchOperations.search(any(), eq(DeviceFingerprintDocument.class))).thenReturn(emptySearchHits());
         when(repository.save(any(DeviceFingerprintDocument.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        FingerprintResponse response = deviceFingerprintService.handleFingerprint(request);
+        FingerprintResponse response = deviceFingerprintService.handleFingerprint(request, "1.1.1.1");
 
         assertTrue(response.matched());
         assertEquals("device-1", response.deviceId());
@@ -113,15 +113,7 @@ class DeviceFingerprintServiceTest {
                         "ISP",
                         Map.of()
                 ),
-                new FingerprintRequest.GeoLocation(
-                        "CN",
-                        "SH",
-                        "Shanghai",
-                        31.2304,
-                        121.4737,
-                        "Asia/Shanghai",
-                        Map.of()
-                ),
+                // geoLocation 已由后端自动查询，不再从前端传入
                 new FingerprintRequest.CertificateFingerprint(
                         List.of("cert-1"),
                         List.of("pin-1")

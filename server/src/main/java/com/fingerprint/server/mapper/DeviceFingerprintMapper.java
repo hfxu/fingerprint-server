@@ -23,7 +23,7 @@ public class DeviceFingerprintMapper {
         DeviceFingerprintDocument.BrowserFingerprint browser = mapBrowser(request.browser());
         DeviceFingerprintDocument.DeviceFingerprint device = mapDevice(request.device());
         DeviceFingerprintDocument.NetworkFingerprint network = mapNetwork(request.network());
-        DeviceFingerprintDocument.GeoLocation geoLocation = mapGeo(request.geoLocation());
+        // geoLocation 将在服务层通过IP地址自动查询，不从前端接收
         DeviceFingerprintDocument.CertificateFingerprint certificate = mapCertificate(request.certificate());
 
         List<String> ipHistory = new ArrayList<>();
@@ -36,7 +36,7 @@ public class DeviceFingerprintMapper {
                 .browser(browser)
                 .device(device)
                 .network(network)
-                .geoLocation(geoLocation)
+                // geoLocation 在服务层通过GeoIP服务自动填充
                 .certificate(certificate)
                 .metadata(request.metadata() == null ? null : new java.util.HashMap<>(request.metadata()))
                 .observationCount(1)
@@ -88,21 +88,6 @@ public class DeviceFingerprintMapper {
                 .rtt(network.rtt())
                 .isp(network.isp())
                 .extra(network.extra())
-                .build();
-    }
-
-    private DeviceFingerprintDocument.GeoLocation mapGeo(FingerprintRequest.GeoLocation geo) {
-        if (geo == null) {
-            return null;
-        }
-        return DeviceFingerprintDocument.GeoLocation.builder()
-                .country(geo.country())
-                .region(geo.region())
-                .city(geo.city())
-                .latitude(geo.latitude())
-                .longitude(geo.longitude())
-                .timezone(geo.timezone())
-                .extra(geo.extra())
                 .build();
     }
 

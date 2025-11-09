@@ -28,12 +28,7 @@ const client = new FingerprintClient({
     return {
       ip: data.ip,
       isp: data.org,
-      geo: {
-        country: data.country,
-        region: data.region,
-        city: data.city,
-        timezone: data.timezone,
-      },
+      // 注意：geoLocation 已由后端基于 IP 地址自动查询，不需要从前端传入
     };
   },
 });
@@ -52,7 +47,7 @@ console.log(result);
 - `apiKey`：可选的鉴权 key，将作为 `X-API-Key` 发送。
 - `loadOptions`：传递给 `FingerprintJS.load` 的配置。
 - `fetchImplementation`：自定义 `fetch` 实现（例如跨平台 polyfill）。
-- `ipResolver`：异步解析公网 IP、ISP 及地理位置。
+- `ipResolver`：异步解析公网 IP 和 ISP（地理位置由后端自动查询）。
 - `certificateProvider`：提供 TLS 证书指纹信息。
 - `metadataProvider`：补充元数据（如用户上下文）。
 - `fingerprintAgentProvider`：自定义 FingerprintJS Agent 创建逻辑。
@@ -64,9 +59,10 @@ SDK 会按以下结构组织上报数据：
 - `browser`：浏览器 UA、语言、时区、插件列表、Canvas/WebGL/Audio 指纹。
 - `device`：平台、架构、触控点、内存、CPU 核心数、屏幕分辨率、色深。
 - `network`：公网/IPv6 IP、网络类型、带宽、RTT、ISP、额外指标。
-- `geoLocation`：来自 `ipResolver` 的地理信息。
 - `certificate`：TLS 证书指纹与 Pinning Hash。
 - `metadata`：包含 FingerprintJS 信心分值及自定义元数据。
+
+**注意**：`geoLocation` 字段已由后端服务基于 IP 地址自动查询（使用 GeoIP 数据库），无需从前端传入。
 
 ## 开发构建
 
